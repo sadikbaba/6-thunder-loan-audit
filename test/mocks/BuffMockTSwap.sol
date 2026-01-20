@@ -21,7 +21,9 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract BuffMockTSwap is ERC20 {
     error TSwapPool__DeadlineHasPassed(uint256 deadline);
     error TSwapPool__MaxPoolTokenDepositTooHigh(uint256 maximumPoolTokensToDeposit, uint256 poolTokensToDeposit);
-    error TSwapPool__MinLiquidityTokensToMintTooLow(uint256 minimumLiquidityTokensToMint, uint256 liquidityTokensToMint);
+    error TSwapPool__MinLiquidityTokensToMintTooLow(
+        uint256 minimumLiquidityTokensToMint, uint256 liquidityTokensToMint
+    );
     error TSwapPool__WethDepositAmountTooLow(uint256 minimumWethDeposit, uint256 wethToDeposit);
     error TSwapPool__WethToReceiveTooLow(uint256 minWethToWithdraw);
     error TSwapPool__PoolTokensToReceiveTooLow(uint256 minPoolTokensToWithdraw);
@@ -243,7 +245,8 @@ contract BuffMockTSwap is ERC20 {
         revertIfZero(outputTokensOrWethReserves)
         returns (uint256 inputTokensOrWeth)
     {
-        uint256 numerator = inputTokensOrWethReserves * outputTokensOrWeth * FEE_DENOMINATOR;
+        uint256 numerator =
+            inputTokensOrWethReserves * outputTokensOrWeth * FEE_DENOMINATOR;
         uint256 denominator = (outputTokensOrWethReserves - outputTokensOrWeth) * (FEE_DENOMINATOR - FEE);
         return numerator / denominator;
     }

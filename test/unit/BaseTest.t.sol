@@ -7,6 +7,8 @@ import { ERC20Mock } from "../mocks/ERC20Mock.sol";
 import { MockTSwapPool } from "../mocks/MockTSwapPool.sol";
 import { MockPoolFactory } from "../mocks/MockPoolFactory.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { BuffMockTSwap } from "../mocks/BuffMockTSwap.sol";
+import { BuffMockPoolFactory } from "../mocks/BuffMockPoolFactory.sol";
 
 contract BaseTest is Test {
     ThunderLoan thunderLoanImplementation;
@@ -16,6 +18,9 @@ contract BaseTest is Test {
 
     ERC20Mock weth;
     ERC20Mock tokenA;
+
+    address liquidity_Provider = address(10000);
+    address _user = address(56);
 
     function setUp() public virtual {
         thunderLoan = new ThunderLoan();
@@ -28,5 +33,41 @@ contract BaseTest is Test {
         proxy = new ERC1967Proxy(address(thunderLoan), "");
         thunderLoan = ThunderLoan(address(proxy));
         thunderLoan.initialize(address(mockPoolFactory));
+    }
+
+    function test_OracleManipulation() public {
+        // 1. setUp contracts
+        thunderLoan = new ThunderLoan();
+        tokenA = new ERC20Mock();
+        proxy = new ERC1967Proxy(address(thunderLoan), "");
+
+        BuffMockPoolFactory pf = new BuffMockPoolFactory(address(weth));
+
+        address tSwapPool = pf.createPool(address(tokenA));
+        thunderLoan = ThunderLoan(address(proxy));
+        thunderLoan.initialize(address(pf));
+
+        // 2. fund TSwap
+
+        vm.startPrank(liquidity_Provider);
+        tokenA.mint(liquidity_Provider, 100e18);
+        tokenA.approve(address(tSwapPool), 100e18);
+        weth.mint(liquidity_Provider, 100e18);
+        weth.approve(address(tSwapPool), 100e18);
+        BuffMockTSwap(tSwapPool).deposit(100e18, 100e18, 100e18, block.timestamp);
+        vm.stopPrank();
+
+        vm.prank(thunderLoan.owner());
+        thunderLoan.setAllowedToken(tokenA, true);
+
+        vm.startPrank(liquidity_Provider);
+        tokenA.mint(liquidity_Provider, 1000e18);
+        tokenA.approve(address(thunderLoan), 1000e18);
+        thunderLoan.deposit(tokenA, 1000e18);
+        vm.stopPrank();
+
+        uint256 normalFeeCost = thunderLoan.getCalculatedFee(tokenA, 100e18);
+        console.log("normal fee is: ", normalFeeCost);
+        //  0.296147410319118389
     }
 }
